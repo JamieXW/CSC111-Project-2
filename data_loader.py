@@ -13,7 +13,8 @@ def load_and_clean_data(csv_file: str) -> pd.DataFrame:
     """
     df = pd.read_csv(csv_file)
     df = df.dropna(subset=['address', 'price'])
-    df['price'] = df['price'].astype(float)
+    # Clean the price column by removing non-numeric characters
+    df['price'] = df['price'].replace('[\$,]', '', regex=True).astype(float)
     return df
 
 
@@ -30,6 +31,8 @@ def get_coordinates(addresses: list[str]) -> dict[str, tuple[float, float]]:
             location = geocode(address)
             if location:
                 coords[address] = (location.latitude, location.longitude)
-        except Exception:
-            continue
+            else:
+                print(f"Geocoding failed for address: {address}")
+        except Exception as e:
+            print(f"Error geocoding address {address}: {e}")
     return coords
