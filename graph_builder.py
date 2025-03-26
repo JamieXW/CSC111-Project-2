@@ -13,9 +13,9 @@ class Apartment:
     address: str
     price: float
     coord: tuple[float, float]
-    
+
     def __init__(self, beds: int, address: str, price: float, coord: tuple[float, float]):
-        self.beds = int
+        self.beds = beds
         self.address = address
         self.price = price
         self.coord = coord
@@ -27,11 +27,17 @@ class Apartment:
 class Area:
     """
     """
-    name = str
-    coord = tuple[float, float]
-    
-    def __init__(self, name: str, coord: tuple[float, float]):
+    name: str
+    assault_rate: float
+    homicide_rate: float
+    theft_rate: float
+    coord: tuple[float, float]
+
+    def __init__(self, name: str, assault_rate: float, homicide_rate: float, theft_rate: float, coord: tuple[float, float]):
         self.name = name
+        self.assault_rate = assault_rate
+        self.homicide_rate = homicide_rate
+        self.theft_rate = theft_rate
         self.coord = coord
         self.apartments: list[Apartment] = []
 
@@ -44,21 +50,71 @@ class Area:
         return sum(a.price for a in self.apartments) / len(self.apartments)
 
 
-def build_graph(areas: list[Area]) -> nx.Graph:
-    G = nx.Graph()
+class Graph:
+    """
+    """
+    areas: list[Area]
+    apartments: list[Apartment]
 
-    for area in areas:
-        G.add_node(area.name, type="area", coord=area.coord, avg_price=area.avg_price())
-        for apt in area.apartments:
-            G.add_node(apt.address, type="apartment", coord=apt.coord, price=apt.price)
-            G.add_edge(apt.address, area.name, relation="located_in")
+    def __init__(self):
+        self.areas = []
+        self.apartments = []
 
-    # Add edges between nearby areas (within 3km)
-    for i, area1 in enumerate(areas):
-        for j, area2 in enumerate(areas):
-            if i < j:
-                dist = geodesic(area1.coord, area2.coord).km
-                if dist < 3.0:
-                    G.add_edge(area1.name, area2.name, relation="nearby", distance=dist)
+    def add_area(self, area: Area) -> None:
+        self.areas.append(area)
+    
+    def add_apartment(self, apt: Apartment) -> None:
+        self.apartments.append(apt)
 
-    return G
+    def build_graph(neighbourhood_file: str, apartment_file: str) -> nx.Graph:
+        """
+        Build a graph from neighborhood and apartment data.
+        """
+        # Load data
+        neighbourhoods = load_neighbourhood_data(neighbourhood_file)
+        apartments = load_apartment_data(apartment_file)
+
+        G = nx.Graph()
+
+        # Add area nodes
+        for _, row in neighbourhoods.iterrows():
+            G.add_node(
+                row['NEIGHBOURHOOD_NAME'],
+                type="area",
+                assault_rate=row['ASSAULT_RATE_2024'],
+                homicide_rate=row['HOMICIDE_RATE_2024'],
+                theft_rate=row['ROBBERY_RATE_2024']
+            )
+
+        # Add apartment nodes and connect to the closest area node
+        for _, row in apartments.iterrows():
+            if pd.isna(row['latitude']) or pd.isna(row['longitude']):
+                print(f"Skipping apartment with missing coordinates: {row['address']}")
+                continue
+
+            # Add apartment node
+            G.add_node(
+                row['address'],
+                type="apartment",
+                coord=(row['latitude'], row['longitude']),
+                price=row['price'],
+                bedrooms=row['bedrooms'],
+                bathrooms=row['bathrooms']
+            )
+
+            # Find the closest area node
+            closest_area = None
+            min_distance = float('inf')
+            for _, area_row in neighbourhoods.iterrows():
+                area_coord = (area_row['latitude'], area_row['longitude'])
+                apartment_coord = (row['latitude'], row['longitude'])
+                distance = geodesic(apartment_coord, area_coord).km
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_area = area_row['NEIGHBOURHOOD_NAME']
+
+            # Connect apartment to the closest area
+            if closest_area:
+                G.add_edge(row['address'], closest_area, relation="located_in", distance=min_distance)
+
+        return G
