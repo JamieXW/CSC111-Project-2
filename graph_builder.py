@@ -66,7 +66,7 @@ class Graph:
     def add_apartment(self, apt: Apartment) -> None:
         self.apartments.append(apt)
 
-    def build_graph(neighbourhood_file: str, apartment_file: str) -> nx.Graph:
+    def build_graph(self, neighbourhood_file: str, apartment_file: str) -> nx.Graph:
         """
         Build a graph from neighborhood and apartment data.
         """
@@ -78,12 +78,20 @@ class Graph:
 
         # Add area nodes
         for _, row in neighbourhoods.iterrows():
-            G.add_node(
-                row['NEIGHBOURHOOD_NAME'],
-                type="area",
+            area = Area(
+                name=row['NEIGHBOURHOOD_NAME'],
                 assault_rate=row['ASSAULT_RATE_2024'],
                 homicide_rate=row['HOMICIDE_RATE_2024'],
-                theft_rate=row['ROBBERY_RATE_2024']
+                theft_rate=row['ROBBERY_RATE_2024'],
+                coord=(row['latitude'], row['longitude'])
+            )
+            self.areas.append(area)  # Add to the areas attribute
+            G.add_node(
+                area.name,
+                type="area",
+                assault_rate=area.assault_rate,
+                homicide_rate=area.homicide_rate,
+                theft_rate=area.theft_rate
             )
 
         # Add apartment nodes and connect to the closest area node
@@ -92,29 +100,32 @@ class Graph:
                 print(f"Skipping apartment with missing coordinates: {row['address']}")
                 continue
 
-            # Add apartment node
-            G.add_node(
-                row['address'],
-                type="apartment",
-                coord=(row['latitude'], row['longitude']),
+            apartment = Apartment(
+                beds=row['bedrooms'],
+                address=row['address'],
                 price=row['price'],
-                bedrooms=row['bedrooms'],
-                bathrooms=row['bathrooms']
+                coord=(row['latitude'], row['longitude'])
+            )
+            self.apartments.append(apartment)  # Add to the apartments attribute
+            G.add_node(
+                apartment.address,
+                type="apartment",
+                coord=apartment.coord,
+                price=apartment.price,
+                bedrooms=apartment.beds
             )
 
             # Find the closest area node
             closest_area = None
             min_distance = float('inf')
-            for _, area_row in neighbourhoods.iterrows():
-                area_coord = (area_row['latitude'], area_row['longitude'])
-                apartment_coord = (row['latitude'], row['longitude'])
-                distance = geodesic(apartment_coord, area_coord).km
+            for area in self.areas:
+                distance = geodesic(apartment.coord, area.coord).km
                 if distance < min_distance:
                     min_distance = distance
-                    closest_area = area_row['NEIGHBOURHOOD_NAME']
+                    closest_area = area.name
 
             # Connect apartment to the closest area
             if closest_area:
-                G.add_edge(row['address'], closest_area, relation="located_in", distance=min_distance)
+                G.add_edge(apartment.address, closest_area, relation="located_in", distance=min_distance)
 
         return G
