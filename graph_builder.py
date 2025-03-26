@@ -4,7 +4,7 @@ This module constructs a graph of apartments and areas using NetworkX.
 """
 import networkx as nx
 from geopy.distance import geodesic
-
+from data_loader import load_neighbourhood_data, load_apartment_data
 
 class Apartment:
     """
