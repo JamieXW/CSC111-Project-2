@@ -20,6 +20,9 @@ class Apartment:
         self.price = price
         self.coord = coord
 
+    def price_per_bed(self) -> float:
+        return self.price / self.beds
+
 
 class Area:
     """
