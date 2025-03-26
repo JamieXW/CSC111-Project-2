@@ -7,13 +7,26 @@ from geopy.distance import geodesic
 
 
 class Apartment:
-    def __init__(self, address: str, price: float, coord: tuple[float, float]):
+    """
+    """
+    beds: int
+    address: str
+    price: float
+    coord: tuple[float, float]
+    
+    def __init__(self, beds: int, address: str, price: float, coord: tuple[float, float]):
+        self.beds = int
         self.address = address
         self.price = price
         self.coord = coord
 
 
 class Area:
+    """
+    """
+    name = str
+    coord = tuple[float, float]
+    
     def __init__(self, name: str, coord: tuple[float, float]):
         self.name = name
         self.coord = coord
