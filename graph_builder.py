@@ -7,7 +7,16 @@ from geopy.distance import geodesic
 from data_loader import load_neighbourhood_data, load_apartment_data
 
 class Apartment:
-    """
+    """An apartment.
+
+    Instance Attributes:
+        - beds: the number of beds in the apartment.
+        - address: the address of the apartment.
+        - price: the price of the apartment.
+        - coord: the coordinate of latitude and longtitude of the apartment.
+
+    Representation Invariants:
+        -
     """
     beds: int
     address: str
@@ -25,7 +34,16 @@ class Apartment:
 
 
 class Area:
-    """
+    """An area in Toronto.
+
+    Instance Attributes:
+        - name: the name of the area.
+        - assault_rate: the assault rate in the area.
+        - homicide_rate: the homicide rate in the area.
+        - coord: the coordinate of latitude and longtitude of the area.
+
+    Representation Invariants:
+        -
     """
     name: str
     assault_rate: float
@@ -51,7 +69,14 @@ class Area:
 
 
 class Graph:
-    """
+    """A graph of areas and apartments.
+
+    Instance Attributes:
+        - areas:
+        - apartments:
+
+    Representation Invariants:
+        -
     """
     areas: list[Area]
     apartments: list[Apartment]
@@ -62,7 +87,7 @@ class Graph:
 
     def add_area(self, area: Area) -> None:
         self.areas.append(area)
-    
+
     def add_apartment(self, apt: Apartment) -> None:
         self.apartments.append(apt)
 
