@@ -7,17 +7,6 @@ from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
 
 
-def load_and_clean_data(csv_file: str) -> pd.DataFrame:
-    """
-    Load and clean the housing dataset.
-    """
-    df = pd.read_csv(csv_file)
-    df = df.dropna(subset=['address', 'price'])
-    # Clean the price column by removing non-numeric characters
-    df['price'] = df['price'].replace('[\$,]', '', regex=True).astype(float)
-    return df
-
-
 def get_coordinates(addresses: list[str]) -> dict[str, tuple[float, float]]:
     """
     Get latitude and longitude for a list of addresses.
@@ -46,10 +35,17 @@ def load_neighbourhood_data(csv_file: str) -> pd.DataFrame:
 
     # Add latitude and longitude columns if they are missing
     if 'latitude' not in df.columns or 'longitude' not in df.columns:
-        # Use the existing get_coordinates function
+        print("Latitude and longitude columns are missing. Geocoding neighborhoods...")
         coords = get_coordinates(df['NEIGHBOURHOOD_NAME'].tolist())
         df['latitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[0])
         df['longitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[1])
+
+    # Ensure latitude and longitude are numeric
+    df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
+    df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
+
+    # Drop rows with invalid coordinates
+    df = df.dropna(subset=['latitude', 'longitude'])
 
     return df
 
