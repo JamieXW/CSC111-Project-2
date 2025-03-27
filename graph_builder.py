@@ -55,6 +55,7 @@ class Apartment:
 
     Instance Attributes:
         - beds: the number of beds in the apartment.
+        - bathrooms: the number of bathrooms in the apartment.
         - address: the address of the apartment.
         - price: the price of the apartment.
         - coord: the coordinate of latitude and longtitude of the apartment.
@@ -67,15 +68,17 @@ class Apartment:
         - -180 <= self.coord[1] <= 180  # valid longitude
     """
     beds: int
+    bathrooms: int
     address: str
     price: float
     coord: tuple[float, float]
     closest_area: Area
 
-    def __init__(self, beds: int, address: str, price: float, coord: tuple[float, float]):
+    def __init__(self, beds: int, bathrooms: int, address: str, price: float, coord: tuple[float, float]):
         """Initialize a new apartment with the given attributes.
         """
         self.beds = beds
+        self.bathrooms = bathrooms
         self.address = address
         self.price = price
         self.coord = coord
@@ -162,10 +165,11 @@ class Graph:
         for _, row in apartments.iterrows():
 
             apartment = Apartment(
-                beds=row['bedrooms'],
-                address=row['address'],
-                price=row['price'],
-                coord=(row['latitude'], row['longitude'])
+                beds=row['Bedroom'],
+                bathrooms=row['Bathroom'],
+                address=row['Address'],
+                price=row['Price'],
+                coord=(row['Lat'], row['Long'])
             )
 
             if apartment.coord is None or not all(isinstance(c, (int, float)) for c in apartment.coord):
@@ -177,7 +181,8 @@ class Graph:
                 type="apartment",
                 coord=apartment.coord,
                 price=apartment.price,
-                bedrooms=apartment.beds
+                bedrooms=apartment.beds,
+                bathrooms=apartment.bathrooms
             )
 
             # Find the closest area node using Euclidean distance

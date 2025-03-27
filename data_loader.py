@@ -50,11 +50,5 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
     """
     Load and preprocess the apartment prices dataset.
     """
-    df = pd.read_csv(csv_file, names=['bedrooms', 'bathrooms', 'address', 'latitude', 'longitude', 'price'])
-    # Ensure required columns are present
-    required_columns = ['bedrooms', 'bathrooms', 'address', 'latitude', 'longitude', 'price']
-    for col in required_columns:
-        if col not in df.columns:
-            raise ValueError(f"Missing required column: {col}")
-
+    df = pd.read_csv(csv_file)
     return df
