@@ -43,26 +43,13 @@ def load_neighbourhood_data(csv_file: str) -> pd.DataFrame:
     Load and preprocess the neighborhood crime rates dataset.
     """
     df = pd.read_csv(csv_file)
-    # Ensure required columns are present
-    required_columns = ['NEIGHBOURHOOD_NAME', 'ASSAULT_RATE_2024', 'HOMICIDE_RATE_2024', 'ROBBERY_RATE_2024']
-    for col in required_columns:
-        if col not in df.columns:
-            raise ValueError(f"Missing required column: {col}")
 
     # Add latitude and longitude columns if they are missing
     if 'latitude' not in df.columns or 'longitude' not in df.columns:
-        geolocator = Nominatim(user_agent="csc111-housing")
-        geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
-
-        def get_coords(neighbourhood_name):
-            location = geocode(neighbourhood_name)
-            if location:
-                return location.latitude, location.longitude
-            else:
-                print(f"Geocoding failed for neighborhood: {neighbourhood_name}")
-                return None, None
-
-        df['latitude'], df['longitude'] = zip(*df['NEIGHBOURHOOD_NAME'].apply(get_coords))
+        # Use the existing get_coordinates function
+        coords = get_coordinates(df['NEIGHBOURHOOD_NAME'].tolist())
+        df['latitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[0])
+        df['longitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[1])
 
     return df
 
@@ -78,6 +65,4 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
         if col not in df.columns:
             raise ValueError(f"Missing required column: {col}")
 
-    # Clean the price column by removing non-numeric characters
-    df['price'] = df['price'].replace('[\$,]', '', regex=True).astype(float)
     return df
