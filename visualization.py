@@ -1,63 +1,36 @@
 # === visualizer.py ===
 """
-This module visualizes the housing graph using Plotly.
+This module visualizes the graph of apartments and areas using NetworkX and Matplotlib.
 """
-import plotly.graph_objects as go
+import matplotlib.pyplot as plt
 import networkx as nx
 
-# hi
 
-def draw_graph(G: nx.Graph) -> None:
+def visualize_graph(G: nx.Graph) -> None:
     """
-    Visualize the housing graph.
+    Visualize the graph using NetworkX and Matplotlib.
+
+    :param G: The NetworkX graph to visualize.
     """
-    pos = {node: G.nodes[node]['coord'][::-1] for node in G.nodes if 'coord' in G.nodes[node]}
-    edge_x = []
-    edge_y = []
+    # Create a layout for the graph
+    pos = nx.spring_layout(G, seed=42)  # Use spring layout for better visualization
 
-    for edge in G.edges():
-        if all(n in pos for n in edge):
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_x += [x0, x1, None]
-            edge_y += [y0, y1, None]
+    # Separate nodes by type
+    area_nodes = [node for node, data in G.nodes(data=True) if data['type'] == 'area']
+    apartment_nodes = [node for node, data in G.nodes(data=True) if data['type'] == 'apartment']
 
-    edge_trace = go.Scattergeo(
-        lon=edge_x,
-        lat=edge_y,
-        mode='lines',
-        line=dict(width=0.5, color='gray'),
-        hoverinfo='none'
-    )
+    # Draw nodes
+    nx.draw_networkx_nodes(G, pos, nodelist=area_nodes, node_color='blue', label='Areas', node_size=500)
+    nx.draw_networkx_nodes(G, pos, nodelist=apartment_nodes, node_color='green', label='Apartments', node_size=300)
 
-    node_x = []
-    node_y = []
-    text = []
-    for node in G.nodes():
-        if node in pos:
-            x, y = pos[node]
-            node_x.append(x)
-            node_y.append(y)
-            info = G.nodes[node]
-            if info['type'] == 'area':
-                label = f"Area: {node}<br>Avg Price: ${info['avg_price']:.0f}"
-            else:
-                label = f"Apartment: {node}<br>Price: ${info['price']:.0f}"
-            text.append(label)
+    # Draw edges
+    nx.draw_networkx_edges(G, pos, edge_color='gray')
 
-    node_trace = go.Scattergeo(
-        lon=node_x,
-        lat=node_y,
-        mode='markers',
-        marker=dict(size=8, color='blue'),
-        text=text,
-        hoverinfo='text'
-    )
+    # Draw labels
+    nx.draw_networkx_labels(G, pos, font_size=8)
 
-    fig = go.Figure(data=[edge_trace, node_trace])
-    fig.update_layout(
-        title='Toronto Housing Graph',
-        geo=dict(scope='north america', projection_type='equirectangular'),
-        showlegend=False
-    )
-    fig.show()
+    # Add legend
+    plt.legend(scatterpoints=1, loc='upper right', fontsize=10)
+    plt.title("Graph of Apartments and Areas")
+    plt.axis('off')  # Turn off the axis
+    plt.show()

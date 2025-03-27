@@ -1,37 +1,27 @@
 # === main.py ===
 """
-This is the entry point for the Toronto Housing Graph program.
+Main entry point for the project. Builds the graph and visualizes it.
 """
-from data_loader import load_and_clean_data, get_coordinates
-from graph_builder import Apartment, Area, build_graph
-from visualizer import draw_graph
+from graph_builder import Graph
+from visualization import visualize_graph
 
 
-def main() -> None:
-    df = load_and_clean_data('toronto_apartments.csv')
+def main():
+    print("Starting the program...")
+    # File paths for the data
+    neighbourhood_file = 'data/Neighbourhood_crime_rates.csv'
+    apartment_file = 'data/apartment_prices.csv'
 
-    # Manually define a few example areas (in a real project you’d automate this)
-    neighborhoods = {
-        'Downtown': (43.654, -79.388),
-        'Midtown': (43.705, -79.399),
-        'Liberty Village': (43.637, -79.423)
-    }
+    # Build the graph
+    graph = Graph()
+    print("Loading data...")
+    G = graph.build_graph(neighbourhood_file, apartment_file)
+    print("Graph built successfully!")
 
-    coords = get_coordinates(df['address'].tolist())
-
-    areas = [Area(name, coord) for name, coord in neighborhoods.items()]
-
-    for _, row in df.iterrows():
-        address = row['address']
-        if address in coords:
-            apt = Apartment(address, row['price'], coords[address])
-            # Assign to closest area by distance
-            closest_area = min(areas, key=lambda a: geodesic(a.coord, apt.coord).km)
-            closest_area.add_apartment(apt)
-
-    G = build_graph(areas)
-    draw_graph(G)
+    # Visualize the graph
+    print("Visualizing the graph...")
+    visualize_graph(G)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
