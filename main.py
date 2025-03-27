@@ -15,7 +15,7 @@ def main():
     # Build the graph
     graph = Graph()
     print("Loading data...")
-    G = graph.build_graph(neighbourhood_file, apartment_file)
+    G = graph.build_graph(neighbourhood_file, apartment_file) # issue
     print("Graph built successfully!")
 
     # Visualize the graph
