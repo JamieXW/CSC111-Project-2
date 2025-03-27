@@ -5,25 +5,21 @@ This module handles loading and preprocessing housing and neighborhood data from
 import pandas as pd
 from geopy.geocoders import Nominatim
 from geopy.extra.rate_limiter import RateLimiter
-
+import googlemaps
 
 def get_coordinates(addresses: list[str]) -> dict[str, tuple[float, float]]:
     """
-    Get latitude and longitude for a list of addresses.
+    Get latitude and longitude for a list of addresses, with optional city and country context.
     """
-    geolocator = Nominatim(user_agent="csc111-housing")
-    geocode = RateLimiter(geolocator.geocode, min_delay_seconds=1)
-
+    
+    gmaps = googlemaps.Client(key="AIzaSyCBsh-FGuizrdf88wvfOE5Tm7UZFQkIqWM")
     coords = {}
     for address in addresses:
-        try:
-            location = geocode(address)
-            if location:
-                coords[address] = (location.latitude, location.longitude)
-            else:
-                print(f"Geocoding failed for address: {address}")
-        except Exception as e:
-            print(f"Error geocoding address {address}: {e}")
+        result = gmaps.geocode(f"{address}, Toronto, ON")
+        if result:
+            location = result[0]['geometry']['location']
+            coords[address] = (location['lat'], location['lng'])
+
     return coords
 
 

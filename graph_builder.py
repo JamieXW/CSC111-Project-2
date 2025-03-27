@@ -3,43 +3,9 @@
 This module constructs a graph of apartments and areas using NetworkX.
 """
 import networkx as nx
-from geopy.distance import geodesic
 import pandas as pd
 from data_loader import load_neighbourhood_data, load_apartment_data
-
-class Apartment:
-    """An apartment property.
-
-    Instance Attributes:
-        - beds: the number of beds in the apartment.
-        - address: the address of the apartment.
-        - price: the price of the apartment.
-        - coord: the coordinate of latitude and longtitude of the apartment.
-
-    Representation Invariants:
-        - self.beds > 0
-        - self.price > 0
-        - len(self.address) > 0
-        - -90 <= self.coord[0] <= 90  # valid latitude
-        - -180 <= self.coord[1] <= 180  # valid longitude
-    """
-    beds: int
-    address: str
-    price: float
-    coord: tuple[float, float]
-
-    def __init__(self, beds: int, address: str, price: float, coord: tuple[float, float]):
-        """Initialize a new apartment with the given attributes.
-        """
-        self.beds = beds
-        self.address = address
-        self.price = price
-        self.coord = coord
-
-    def price_per_bed(self) -> float:
-        """Return the price per bedroom for this apartment.
-        """
-        return self.price / self.beds
+import math
 
 
 class Area:
@@ -76,17 +42,49 @@ class Area:
         self.coord = coord
         self.apartments: list[Apartment] = []
 
-    def add_apartment(self, apt: Apartment) -> None:
-        """Add an apartment to this area's collection.
-        """
-        self.apartments.append(apt)
-
     def avg_price(self) -> float:
         """Calculate the average price of apartments in this area.
         """
         if not self.apartments:
             return 0.0
         return sum(a.price for a in self.apartments) / len(self.apartments)
+    
+
+class Apartment:
+    """An apartment property.
+
+    Instance Attributes:
+        - beds: the number of beds in the apartment.
+        - address: the address of the apartment.
+        - price: the price of the apartment.
+        - coord: the coordinate of latitude and longtitude of the apartment.
+
+    Representation Invariants:
+        - self.beds > 0
+        - self.price > 0
+        - len(self.address) > 0
+        - -90 <= self.coord[0] <= 90  # valid latitude
+        - -180 <= self.coord[1] <= 180  # valid longitude
+    """
+    beds: int
+    address: str
+    price: float
+    coord: tuple[float, float]
+    closest_area: Area
+
+    def __init__(self, beds: int, address: str, price: float, coord: tuple[float, float]):
+        """Initialize a new apartment with the given attributes.
+        """
+        self.beds = beds
+        self.address = address
+        self.price = price
+        self.coord = coord
+        closest_area = None
+
+    def price_per_bed(self) -> float:
+        """Return the price per bedroom for this apartment.
+        """
+        return self.price / self.beds
 
 
 class Graph:
@@ -104,19 +102,33 @@ class Graph:
         """
         self.areas = []
         self.apartments = []
+        
 
     def add_area(self, area: Area) -> None:
         """Add a neighborhood area to the graph.
         """
         self.areas.append(area)
 
+
     def add_apartment(self, apt: Apartment) -> None:
         """Add an apartment property to the graph.
         """
         self.apartments.append(apt)
 
+
+    def add_edge(self, apartment_node: Apartment, area_node: Area) -> None:
+        """
+        Add an edge between an apartment and an area in the graph.
+        """
+        if apartment_node in self.apartments and area_node in self.areas:
+            apartment_node.closest_area = area_node
+        else:
+            raise ValueError("Either the apartment or the area is not part of the graph.")
+        
+
     def build_graph(self, neighbourhood_file: str, apartment_file: str) -> nx.Graph:
-        """Build a graph from neighborhood and apartment data.
+        """
+        Build a graph from neighborhood and apartment data.
         """
         # Load data
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
@@ -133,20 +145,21 @@ class Graph:
                 theft_rate=row['ROBBERY_RATE_2024'],
                 coord=(row['latitude'], row['longitude'])
             )
-            self.areas.append(area)  # Add to the areas attribute
+            if area.coord is None or not all(isinstance(c, (int, float)) for c in area.coord):
+                continue
+
+            self.areas.append(area)
             G.add_node(
                 area.name,
                 type="area",
                 assault_rate=area.assault_rate,
                 homicide_rate=area.homicide_rate,
-                theft_rate=area.theft_rate
+                theft_rate=area.theft_rate,
+                coord=area.coord
             )
 
         # Add apartment nodes and connect to the closest area node
         for _, row in apartments.iterrows():
-            if pd.isna(row['latitude']) or pd.isna(row['longitude']):
-                print(f"Skipping apartment with missing coordinates: {row['address']}")
-                continue
 
             apartment = Apartment(
                 beds=row['bedrooms'],
@@ -154,7 +167,11 @@ class Graph:
                 price=row['price'],
                 coord=(row['latitude'], row['longitude'])
             )
-            self.apartments.append(apartment)  # Add to the apartments attribute
+
+            if apartment.coord is None or not all(isinstance(c, (int, float)) for c in apartment.coord):
+                continue
+            
+            self.apartments.append(apartment)
             G.add_node(
                 apartment.address,
                 type="apartment",
@@ -163,17 +180,25 @@ class Graph:
                 bedrooms=apartment.beds
             )
 
-            # Find the closest area node
-            closest_area = None
-            min_distance = float('inf')
+            # Find the closest area node using Euclidean distance
+            closest_area = self.areas[0]
+            min_distance = math.sqrt(
+                (apartment.coord[0] - closest_area.coord[0]) ** 2 +
+                (apartment.coord[1] - closest_area.coord[1]) ** 2
+            )
             for area in self.areas:
-                distance = geodesic(apartment.coord, area.coord).km
+                # Calculate Euclidean distance
+                distance = math.sqrt(
+                    (apartment.coord[0] - area.coord[0]) ** 2 +
+                    (apartment.coord[1] - area.coord[1]) ** 2
+                )
                 if distance < min_distance:
                     min_distance = distance
-                    closest_area = area.name
+                    closest_area = area
 
             # Connect apartment to the closest area
-            if closest_area:
-                G.add_edge(apartment.address, closest_area, relation="located_in", distance=min_distance)
+            
+            self.add_edge(apartment, closest_area)
+            G.add_edge(apartment.address, closest_area.name, relation="located_in", distance=min_distance)
 
         return G
