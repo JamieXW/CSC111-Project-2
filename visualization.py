@@ -1,50 +1,82 @@
 # === visualizer.py ===
 """
-This module visualizes the graph of apartments and areas using PyVis.
+This module visualizes the graph of apartments and areas using Plotly and NetworkX.
 """
-from pyvis.network import Network
+import networkx as nx
+from plotly.graph_objs import Scatter, Figure
+
+# Colors for different node types
+AREA_COLOR = 'rgb(89, 205, 105)'  # Green for areas
+APARTMENT_COLOR = 'rgb(105, 89, 205)'  # Purple for apartments
+EDGE_COLOR = 'rgb(210, 210, 210)'  # Light gray for edges
+NODE_BORDER_COLOR = 'rgb(50, 50, 50)'  # Dark gray for node borders
 
 
-def visualize_graph(G):
+def visualize_graph(G: nx.Graph, layout: str = 'spring_layout', output_file: str = '') -> None:
     """
-    Visualize the graph using PyVis.
+    Visualize the graph using Plotly and NetworkX.
 
     :param G: The NetworkX graph to visualize.
+    :param layout: The layout algorithm to use (e.g., 'spring_layout', 'circular_layout').
+    :param output_file: If provided, save the visualization to this file instead of displaying it.
     """
-    # Create a PyVis network
-    net = Network(notebook=False, height="750px", width="100%", bgcolor="#222222", font_color="white")
+    # Generate the layout for the graph
+    pos = getattr(nx, layout)(G)
 
-    # Add nodes to the PyVis network
-    for node, data in G.nodes(data=True):
-        if data.get('type') == 'area':
-            net.add_node(
-                node,
-                label=node,
-                title=f"Type: Area<br>Assault Rate: {data.get('assault_rate', 'N/A')}<br>"
-                      f"Homicide Rate: {data.get('homicide_rate', 'N/A')}<br>"
-                      f"Theft Rate: {data.get('theft_rate', 'N/A')}",
-                color="blue",
-                size=20
-            )
-        elif data.get('type') == 'apartment':
-            net.add_node(
-                node,
-                label=node,
-                title=f"Type: Apartment<br>Price: {data.get('price', 'N/A')}<br>"
-                      f"Bedrooms: {data.get('bedrooms', 'N/A')}<br>"
-                      f"Bathrooms: {data.get('bathrooms', 'N/A')}",
-                color="green",
-                size=15
-            )
+    # Extract node positions, labels, and types
+    x_values = [pos[node][0] for node in G.nodes]
+    y_values = [pos[node][1] for node in G.nodes]
+    labels = list(G.nodes)
+    types = [G.nodes[node]['type'] for node in G.nodes]
 
-    # Add edges to the PyVis network
-    for source, target, data in G.edges(data=True):
-        net.add_edge(
-            source,
-            target,
-            title=f"Distance: {data.get('distance', 'N/A')} km",
-            color="gray"
-        )
+    # Assign colors based on node type
+    colors = [AREA_COLOR if node_type == 'area' else APARTMENT_COLOR for node_type in types]
 
-    # Generate and open the visualization in a web browser
-    net.show("graph_visualization.html")
+    # Extract edge positions
+    x_edges = []
+    y_edges = []
+    for edge in G.edges:
+        x_edges += [pos[edge[0]][0], pos[edge[1]][0], None]
+        y_edges += [pos[edge[0]][1], pos[edge[1]][1], None]
+
+    # Create edge traces
+    edge_trace = Scatter(
+        x=x_edges,
+        y=y_edges,
+        mode='lines',
+        line=dict(color=EDGE_COLOR, width=1),
+        hoverinfo='none',
+        name='edges'
+    )
+
+    # Create node traces
+    node_trace = Scatter(
+        x=x_values,
+        y=y_values,
+        mode='markers',
+        marker=dict(
+            symbol='circle-dot',
+            size=10,
+            color=colors,
+            line=dict(color=NODE_BORDER_COLOR, width=0.5)
+        ),
+        text=labels,
+        hovertemplate='%{text}',
+        hoverlabel={'namelength': 0},
+        name='nodes'
+    )
+
+    # Combine traces into a figure
+    fig = Figure(data=[edge_trace, node_trace])
+    fig.update_layout(
+        showlegend=False,
+        xaxis=dict(showgrid=False, zeroline=False, visible=False),
+        yaxis=dict(showgrid=False, zeroline=False, visible=False),
+        title="Graph Visualization"
+    )
+
+    # Display or save the visualization
+    if output_file:
+        fig.write_html(output_file)
+    else:
+        fig.show()
