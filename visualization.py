@@ -5,6 +5,7 @@ This module visualizes the housing graph using Plotly.
 import plotly.graph_objects as go
 import networkx as nx
 
+# hi
 
 def draw_graph(G: nx.Graph) -> None:
     """
