@@ -2,6 +2,8 @@
 """
 This module constructs a graph of apartments and areas using NetworkX.
 """
+from typing import Optional
+
 import networkx as nx
 import pandas as pd
 from data_loader import load_neighbourhood_data, load_apartment_data
@@ -48,7 +50,7 @@ class Area:
         if not self.apartments:
             return 0.0
         return sum(a.price for a in self.apartments) / len(self.apartments)
-    
+
 
 class Apartment:
     """An apartment property.
@@ -72,7 +74,7 @@ class Apartment:
     address: str
     price: float
     coord: tuple[float, float]
-    closest_area: Area
+    closest_area: Optional['Area']
 
     def __init__(self, beds: int, bathrooms: int, address: str, price: float, coord: tuple[float, float]):
         """Initialize a new apartment with the given attributes.
@@ -82,7 +84,7 @@ class Apartment:
         self.address = address
         self.price = price
         self.coord = coord
-        closest_area = None
+        self.closest_area = None
 
     def price_per_bed(self) -> float:
         """Return the price per bedroom for this apartment.
@@ -105,7 +107,7 @@ class Graph:
         """
         self.areas = []
         self.apartments = []
-        
+
 
     def add_area(self, area: Area) -> None:
         """Add a neighborhood area to the graph.
@@ -127,7 +129,7 @@ class Graph:
             apartment_node.closest_area = area_node
         else:
             raise ValueError("Either the apartment or the area is not part of the graph.")
-        
+
 
     def build_graph(self, neighbourhood_file: str, apartment_file: str) -> nx.Graph:
         """
@@ -221,7 +223,7 @@ class Graph:
             min_distance = math.sqrt(
                 (apartment.coord[0] - closest_area.coord[0]) ** 2 +
                 (apartment.coord[1] - closest_area.coord[1]) ** 2
-)
+            )
             for area in self.areas:
                 distance = math.sqrt(
                     (apartment.coord[0] - area.coord[0]) ** 2 +

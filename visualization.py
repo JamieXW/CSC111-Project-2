@@ -1,3 +1,4 @@
+
 # === visualizer.py ===
 """
 This module visualizes the graph of apartments and areas using Plotly and NetworkX.
@@ -21,7 +22,17 @@ def visualize_graph(G: nx.Graph, layout: str = 'spring_layout', output_file: str
     :param output_file: If provided, save the visualization to this file instead of displaying it.
     """
     # Generate the layout for the graph
-    pos = getattr(nx, layout)(G)
+    # Build a position dictionary from the node's coord attribute
+    pos = {}
+    for node in G.nodes:
+        if 'coord' in G.nodes[node]:
+            # Usually 'coord' is stored as (latitude, longitude).
+            # If you want X=longitude and Y=latitude, do this:
+            lat, lon = G.nodes[node]['coord']
+            pos[node] = (lon, lat)
+        else:
+            # Fallback if the node somehow has no 'coord'
+            pos[node] = (0, 0)
 
     # Extract node positions, labels, and types
     x_values = [pos[node][0] for node in G.nodes]
