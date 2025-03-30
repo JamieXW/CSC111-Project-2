@@ -28,18 +28,13 @@ def load_neighbourhood_data(csv_file: str) -> pd.DataFrame:
     """
     df = pd.read_csv(csv_file)
 
-    # Add latitude and longitude columns if they are missing
-    if 'latitude' not in df.columns or 'longitude' not in df.columns:
-        print("Latitude and longitude columns are missing. Geocoding neighborhoods...")
-        coords = get_coordinates(df['NEIGHBOURHOOD_NAME'].tolist())
-        df['latitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[0])
-        df['longitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[1])
+    coords = get_coordinates(df['NEIGHBOURHOOD_NAME'].tolist())
+    df['latitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[0])
+    df['longitude'] = df['NEIGHBOURHOOD_NAME'].map(lambda name: coords.get(name, (None, None))[1])
 
-    # Ensure latitude and longitude are numeric
     df['latitude'] = pd.to_numeric(df['latitude'], errors='coerce')
     df['longitude'] = pd.to_numeric(df['longitude'], errors='coerce')
 
-    # Drop rows with invalid coordinates
     df = df.dropna(subset=['latitude', 'longitude'])
 
     return df

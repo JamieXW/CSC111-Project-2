@@ -5,7 +5,6 @@ This module constructs a graph of apartments and areas using NetworkX.
 from typing import Optional
 
 import networkx as nx
-import pandas as pd
 from data_loader import load_neighbourhood_data, load_apartment_data
 import math
 
@@ -49,7 +48,7 @@ class Area:
         """
         if not self.apartments:
             return 0.0
-        return sum(a.price for a in self.apartments) / len(self.apartments)
+        return sum(apartment.price for apartment in self.apartments) / len(self.apartments)
 
 
 class Apartment:
@@ -135,13 +134,11 @@ class Graph:
         """
         Build a graph from neighborhood and apartment data, filtering apartments based on user preferences.
         """
-        # Prompt the user for filtering preferences
         print("Enter your preferences for apartments:")
         beds_pref = input("Number of beds (specific number or 'any'): ").strip().lower()
         baths_pref = input("Number of baths (specific number or 'any'): ").strip().lower()
         price_per_bed_pref = input("Price per bed (specific number or 'any'): ").strip().lower()
 
-        # Convert preferences to numeric values if applicable
         if beds_pref.isdigit():
             beds_pref = int(beds_pref)
         else:
@@ -155,13 +152,11 @@ class Graph:
         else:
             price_per_bed_pref = None
 
-        # Load data
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
         apartments = load_apartment_data(apartment_file)
 
         G = nx.Graph()
 
-        # Add area nodes
         for _, row in neighbourhoods.iterrows():
             area = Area(
                 name=row['NEIGHBOURHOOD_NAME'],
@@ -170,11 +165,12 @@ class Graph:
                 theft_rate=row['ROBBERY_RATE_2024'],
                 coord=(row['latitude'], row['longitude'])
             )
+
             if area.coord is None or not all(isinstance(c, (int, float)) for c in area.coord):
                 print(f"Skipping area with invalid coordinates: {area.name}")
                 continue
 
-            self.areas.append(area)
+            self.add_area(area)
             G.add_node(
                 area.name,
                 type="area",
@@ -184,7 +180,6 @@ class Graph:
                 coord=area.coord
             )
 
-        # Add apartment nodes and connect to the closest area node
         for _, row in apartments.iterrows():
             apartment = Apartment(
                 beds=row['Bedroom'],
@@ -194,11 +189,9 @@ class Graph:
                 coord=(row['Lat'], row['Long'])
             )
 
-            # Validate apartment coordinates
             if apartment.coord is None or not all(isinstance(c, (int, float)) for c in apartment.coord):
                 continue
 
-            # Apply filtering based on user preferences
             if beds_pref is not None and apartment.beds != beds_pref:
                 continue
             if baths_pref is not None and apartment.bathrooms != baths_pref:
@@ -208,7 +201,7 @@ class Graph:
                 if price_per_bed > price_per_bed_pref:
                     continue
 
-            self.apartments.append(apartment)
+            self.add_apartment(apartment)
             G.add_node(
                 apartment.address,
                 type="apartment",
@@ -218,7 +211,6 @@ class Graph:
                 bathrooms=apartment.bathrooms
             )
 
-            # Find the closest area node using Euclidean distance
             closest_area = self.areas[0]
             min_distance = math.sqrt(
                 (apartment.coord[0] - closest_area.coord[0]) ** 2 +
