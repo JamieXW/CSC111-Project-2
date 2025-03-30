@@ -46,4 +46,10 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
     """
     df = pd.read_csv(csv_file)
     df = df[df['Address'].str.lower().str.contains('toronto', na=False)]
+    df['Price'] = (  
+        df['Price']
+        .str.replace('$', '', regex=False)  
+        .str.replace(',', '', regex=False) 
+        .astype(float)  
+    )
     return df

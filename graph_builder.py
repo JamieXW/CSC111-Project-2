@@ -147,9 +147,12 @@ class Graph:
             baths_pref = int(baths_pref)
         else:
             baths_pref = None
-        if price_per_bed_pref.replace('.', '', 1).isdigit():
+
+        price_per_bed_pref = price_per_bed_pref.replace('$', '')
+        try:
             price_per_bed_pref = float(price_per_bed_pref)
-        else:
+        except ValueError:
+            print("valuee rror")
             price_per_bed_pref = None
 
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
