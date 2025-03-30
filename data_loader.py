@@ -46,21 +46,20 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
     """
     df = pd.read_csv(csv_file)
 
-    # Filter rows where the 'Address' contains 'Toronto'
     df = df[df['Address'].str.lower().str.contains('toronto', na=False)]
 
-    # Ensure the 'Price' column is treated as strings before applying string operations
-    df['Price'] = df['Price'].astype(str)  # Convert to string
+    df['bedroom'] = pd.to_numeric(df['bedroom'], errors='coerce')
+    df['bathroom'] = pd.to_numeric(df['bathroom'], errors='coerce')
+
+    df['Price'] = df['Price'].astype(str)  
     df['Price'] = (
         df['Price']
-        .str.replace('$', '', regex=False)  # Remove dollar signs
-        .str.replace(',', '', regex=False)  # Remove commas
+        .str.replace('$', '', regex=False)  
+        .str.replace(',', '', regex=False) 
     )
 
-    # Convert the 'Price' column to float, handling any invalid values
     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
 
-    # Drop rows with invalid or missing prices
     df = df.dropna(subset=['Price'])
 
     return df
