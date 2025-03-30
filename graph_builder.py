@@ -16,14 +16,14 @@ class Area:
         - name: the name of the area.
         - assault_rate: the assault rate in the area.
         - homicide_rate: the homicide rate in the area.
-        - theft_rate: the theft rate in the area.
-        - coord: the coordinate of latitude and longtitude of the area.
+        - robbery_rate: the robbery rate in the area.
+        - coord: the coordinate of latitude and longitude of the area.
 
     Representation Invariants:
         - len(self.name) > 0
         - self.assault_rate >= 0
         - self.homicide_rate >= 0
-        - self.theft_rate >= 0
+        - self.robbery_rate >= 0
         - -90 <= self.coord[0] <= 90
         - -180 <= self.coord[1] <= 180
 
@@ -31,21 +31,20 @@ class Area:
     name: str
     assault_rate: float
     homicide_rate: float
-    theft_rate: float
+    robbery_rate: float
     coord: tuple[float, float]
 
-    def __init__(self, name: str, assault_rate: float, homicide_rate: float, theft_rate: float, coord: tuple[float, float]):
+    def __init__(self, name: str, assault_rate: float, homicide_rate: float, robbery_rate: float, coord: tuple[float, float]):
         """Initialize a new area with the given attributes."""
         self.name = name
         self.assault_rate = assault_rate
         self.homicide_rate = homicide_rate
-        self.theft_rate = theft_rate
+        self.robbery_rate = robbery_rate
         self.coord = coord
         self.apartments: list[Apartment] = []
 
     def avg_price(self) -> float:
-        """Calculate the average price of apartments in this area.
-        """
+        """Calculate the average price of apartments in this area."""
         if not self.apartments:
             return 0.0
         return sum(apartment.price for apartment in self.apartments) / len(self.apartments)
@@ -59,7 +58,7 @@ class Apartment:
         - bathrooms: the number of bathrooms in the apartment.
         - address: the address of the apartment.
         - price: the price of the apartment.
-        - coord: the coordinate of latitude and longtitude of the apartment.
+        - coord: the coordinate of latitude and longitude of the apartment.
 
     Representation Invariants:
         - self.beds > 0
@@ -92,33 +91,23 @@ class Apartment:
 
 
 class Graph:
-    """A graph representation connecting apartments .
+    """A graph representation connecting apartments."""
 
-    Instance Attributes:
-        - areas: collection of neighborhood areas in the graph.
-        - apartments: collection of apartment properties in the graph.
-    """
     areas: list[Area]
     apartments: list[Apartment]
 
     def __init__(self):
-        """Initialize an empty graph with no areas or apartments.
-        """
+        """Initialize an empty graph with no areas or apartments."""
         self.areas = []
         self.apartments = []
 
-
     def add_area(self, area: Area) -> None:
-        """Add a neighborhood area to the graph.
-        """
+        """Add a neighborhood area to the graph."""
         self.areas.append(area)
 
-
     def add_apartment(self, apt: Apartment) -> None:
-        """Add an apartment property to the graph.
-        """
+        """Add an apartment property to the graph."""
         self.apartments.append(apt)
-
 
     def add_edge(self, apartment_node: Apartment, area_node: Area) -> None:
         """
@@ -128,7 +117,6 @@ class Graph:
             apartment_node.closest_area = area_node
         else:
             raise ValueError("Either the apartment or the area is not part of the graph.")
-
 
     def build_graph(self, neighbourhood_file: str, apartment_file: str) -> nx.Graph:
         """
@@ -148,12 +136,15 @@ class Graph:
         else:
             baths_pref = None
 
-        price_per_bed_pref = price_per_bed_pref.replace('$', '')
-        try:
-            price_per_bed_pref = float(price_per_bed_pref)
-        except ValueError:
-            print("valuee rror")
+        if price_per_bed_pref == 'any':
             price_per_bed_pref = None
+        else:
+            price_per_bed_pref = price_per_bed_pref.replace('$', '')
+            try:
+                price_per_bed_pref = float(price_per_bed_pref)
+            except ValueError:
+                print("Value error")
+                price_per_bed_pref = None
 
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
         apartments = load_apartment_data(apartment_file)
@@ -165,7 +156,7 @@ class Graph:
                 name=row['NEIGHBOURHOOD_NAME'],
                 assault_rate=row['ASSAULT_RATE_2024'],
                 homicide_rate=row['HOMICIDE_RATE_2024'],
-                theft_rate=row['ROBBERY_RATE_2024'],
+                robbery_rate=row['ROBBERY_RATE_2024'],
                 coord=(row['latitude'], row['longitude'])
             )
 
@@ -174,13 +165,28 @@ class Graph:
                 continue
 
             self.add_area(area)
+
+            if area.assault_rate < 642.34 and area.robbery_rate < 90.33 and area.homicide_rate == 0.0:
+                crime_level = 'low'
+                color = 'green'
+            elif (642.34 <= area.assault_rate <= 1000 or
+                  90.33 <= area.robbery_rate <= 150 or
+                  0.1 <= area.homicide_rate <= 5.0):
+                crime_level = 'medium'
+                color = 'yellow'
+            else:
+                crime_level = 'high'
+                color = 'red'
+
             G.add_node(
                 area.name,
                 type="area",
                 assault_rate=area.assault_rate,
+                robbery_rate=area.robbery_rate,
                 homicide_rate=area.homicide_rate,
-                theft_rate=area.theft_rate,
-                coord=area.coord
+                coord=area.coord,
+                crime_level=crime_level,
+                color=color
             )
 
         for _, row in apartments.iterrows():

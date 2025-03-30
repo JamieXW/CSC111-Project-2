@@ -1,4 +1,3 @@
-
 # === visualizer.py ===
 """
 This module visualizes the graph of apartments and areas using Plotly and NetworkX.
@@ -6,7 +5,6 @@ This module visualizes the graph of apartments and areas using Plotly and Networ
 import networkx as nx
 from plotly.graph_objs import Scatter, Figure
 
-AREA_COLOR = 'rgb(89, 205, 105)'  # Green for areas
 APARTMENT_COLOR = 'rgb(105, 89, 205)'  # Purple for apartments
 EDGE_COLOR = 'rgb(210, 210, 210)'  # Light gray for edges
 NODE_BORDER_COLOR = 'rgb(50, 50, 50)'  # Dark gray for node borders
@@ -34,7 +32,7 @@ def visualize_graph(G: nx.Graph, layout: str = 'spring_layout', output_file: str
     labels = list(G.nodes)
     types = [G.nodes[node]['type'] for node in G.nodes]
 
-    colors = [AREA_COLOR if node_type == 'area' else APARTMENT_COLOR for node_type in types]
+    colors = [G.nodes[node]['color'] if G.nodes[node]['type'] == 'area' else APARTMENT_COLOR for node in G.nodes]
 
     x_edges = []
     y_edges = []
@@ -51,6 +49,7 @@ def visualize_graph(G: nx.Graph, layout: str = 'spring_layout', output_file: str
         name='edges'
     )
 
+    # Create node traces
     node_trace = Scatter(
         x=x_values,
         y=y_values,
