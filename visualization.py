@@ -34,16 +34,16 @@ def visualize_graph(graph: nx.Graph, output_file: str = '') -> None:
     price_per_bed_labels = []
     hover_labels = []
     for n in graph.nodes:
-        node_data = graph.nodes[node]
+        node_data = graph.nodes[n]
         if node_data['type'] == 'apartment':
             price = node_data.get('price', 0)
             bedrooms = node_data.get('bedrooms', 1)
             price_per_bed = price / bedrooms if bedrooms != 0 else 0
             price_per_bed_labels.append(f"${price_per_bed:.2f}")
-            hover_labels.append(node)
+            hover_labels.append(n)
         else:
             price_per_bed_labels.append("")
-            hover_labels.append(node)
+            hover_labels.append(n)
 
     colors = [
         graph.nodes[node]['color'] if graph.nodes[node]['type'] == 'area' else APARTMENT_COLOR
@@ -60,7 +60,7 @@ def visualize_graph(graph: nx.Graph, output_file: str = '') -> None:
         x=x_edges,
         y=y_edges,
         mode='lines',
-        line=dict(color=EDGE_COLOR, width=1),
+        line={"color": EDGE_COLOR, "width": 1},
         hoverinfo='none',
         name='edges'
     )
@@ -69,18 +69,12 @@ def visualize_graph(graph: nx.Graph, output_file: str = '') -> None:
         x=x_values,
         y=y_values,
         mode='markers+text',
-        marker=dict(
-            symbol='circle-dot',
-            size=10,
-            color=colors,
-            line=dict(color=NODE_BORDER_COLOR, width=0.5)
-        ),
+        marker={"symbol": 'circle-dot', "size": 10, "color": colors, "line": {"color": NODE_BORDER_COLOR,
+                                                                              "width": 0.5}},
         text=price_per_bed_labels,
         textposition='top center',
         hovertext=hover_labels,
-        textfont=dict(
-            size=7
-        ),
+        textfont={"size": 7},
         hoverinfo='text',
         name='nodes'
     )
@@ -88,8 +82,8 @@ def visualize_graph(graph: nx.Graph, output_file: str = '') -> None:
     fig = Figure(data=[edge_trace, node_trace])
     fig.update_layout(
         showlegend=False,
-        xaxis=dict(showgrid=False, zeroline=False, visible=False),
-        yaxis=dict(showgrid=False, zeroline=False, visible=False),
+        xaxis={"showgrid": False, "zeroline": False, "visible": False},
+        yaxis={"showgrid": False, "zeroline": False, "visible": False},
         title="Graph Visualization"
     )
 
