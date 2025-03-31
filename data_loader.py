@@ -1,6 +1,6 @@
 # === data_loader.py ===
 """
-This module handles loading and preprocessing housing and neighborhood data from CSV files.
+This module handles loading and preprocessing apartment and neighborhood data from CSV files.
 """
 import pandas as pd
 import googlemaps
@@ -11,7 +11,7 @@ def get_coordinates(addresses: list[str]) -> dict[str, tuple[float, float]]:
     Get latitude and longitude for a list of addresses, with optional city and country context.
     """
 
-    gmaps = googlemaps.Client(key="AIzaSyCBsh-FGuizrdf88wvfOE5Tm7UZFQkIqWM")
+    gmaps = googlemaps.Client(key="AIzaSyBjzPu6iM6AJmyIQvRY5PRFSjthClZtyUE")
     coords = {}
     for address in addresses:
         result = gmaps.geocode(f"{address}, Toronto, ON")
@@ -48,8 +48,8 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
 
     df = df[df['Address'].str.lower().str.contains('toronto', na=False)]
 
-    df['bedroom'] = pd.to_numeric(df['bedroom'], errors='coerce')
-    df['bathroom'] = pd.to_numeric(df['bathroom'], errors='coerce')
+    df['Bedroom'] = pd.to_numeric(df['Bedroom'], errors='coerce')
+    df['Bathroom'] = pd.to_numeric(df['Bathroom'], errors='coerce')
 
     df['Price'] = df['Price'].astype(str)  
     df['Price'] = (
@@ -63,3 +63,13 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
     df = df.dropna(subset=['Price'])
 
     return df
+
+
+if __name__ == '__main__':
+    import python_ta
+
+    python_ta.check_all(config={ 
+        'extra-imports': ['pandas', 'googlemaps'],
+        'allowed-io': [],
+        'max-line-length': 120,
+})

@@ -3,10 +3,9 @@
 This module constructs a graph of apartments and areas using NetworkX.
 """
 from typing import Optional
-
 import networkx as nx
-from data_loader import load_neighbourhood_data, load_apartment_data
 import math
+from data_loader import load_neighbourhood_data, load_apartment_data
 
 
 class Area:
@@ -33,15 +32,17 @@ class Area:
     homicide_rate: float
     robbery_rate: float
     coord: tuple[float, float]
+    apartments: list['Apartment']
 
-    def __init__(self, name: str, assault_rate: float, homicide_rate: float, robbery_rate: float, coord: tuple[float, float]):
+    def __init__(self, name: str, assault_rate: float, 
+                 homicide_rate: float, robbery_rate: float, coord: tuple[float, float]) -> None:
         """Initialize a new area with the given attributes."""
         self.name = name
         self.assault_rate = assault_rate
         self.homicide_rate = homicide_rate
         self.robbery_rate = robbery_rate
         self.coord = coord
-        self.apartments: list[Apartment] = []
+        self.apartments = []
 
     def avg_price(self) -> float:
         """Calculate the average price of apartments in this area."""
@@ -74,7 +75,7 @@ class Apartment:
     coord: tuple[float, float]
     closest_area: Optional['Area']
 
-    def __init__(self, beds: int, bathrooms: int, address: str, price: float, coord: tuple[float, float]):
+    def __init__(self, beds: int, bathrooms: int, address: str, price: float, coord: tuple[float, float]) -> None:
         """Initialize a new apartment with the given attributes.
         """
         self.beds = beds
@@ -96,7 +97,7 @@ class Graph:
     areas: list[Area]
     apartments: list[Apartment]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an empty graph with no areas or apartments."""
         self.areas = []
         self.apartments = []
@@ -125,7 +126,8 @@ class Graph:
         print("Enter your preferences for apartments:")
         beds_pref = input("Number of beds (specific number or 'any'): ").strip().lower()
         baths_pref = input("Number of baths (specific number or 'any'): ").strip().lower()
-        price_per_bed_pref = input("Price per bed (specific number or 'any'): ").strip().lower()
+        price_per_bed_pref = input(
+            "Price per bed (specific number or 'any'. Enter in the form '$'price'.0): ").strip().lower()
 
         if beds_pref.isdigit():
             beds_pref = int(beds_pref)
@@ -149,7 +151,7 @@ class Graph:
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
         apartments = load_apartment_data(apartment_file)
 
-        G = nx.Graph()
+        graph = nx.Graph()
 
         for _, row in neighbourhoods.iterrows():
             area = Area(
@@ -169,16 +171,15 @@ class Graph:
             if area.assault_rate < 642.34 and area.robbery_rate < 90.33 and area.homicide_rate == 0.0:
                 crime_level = 'low'
                 color = 'green'
-            elif (642.34 <= area.assault_rate <= 1000 or
-                  90.33 <= area.robbery_rate <= 150 or
-                  0.1 <= area.homicide_rate <= 5.0):
+            elif (642.34 <= area.assault_rate <= 1000 or 90.33
+                   <= area.robbery_rate <= 150 or 0.1 <= area.homicide_rate <= 5.0):
                 crime_level = 'medium'
                 color = 'yellow'
             else:
                 crime_level = 'high'
                 color = 'red'
 
-            G.add_node(
+            graph.add_node(
                 area.name,
                 type="area",
                 assault_rate=area.assault_rate,
@@ -200,7 +201,6 @@ class Graph:
 
             if apartment.coord is None or not all(isinstance(c, (int, float)) for c in apartment.coord):
                 continue
-
             if beds_pref is not None and apartment.beds != beds_pref:
                 continue
             if baths_pref is not None and apartment.bathrooms != baths_pref:
@@ -211,7 +211,7 @@ class Graph:
                     continue
 
             self.add_apartment(apartment)
-            G.add_node(
+            graph.add_node(
                 apartment.address,
                 type="apartment",
                 coord=apartment.coord,
@@ -227,8 +227,8 @@ class Graph:
             )
             for area in self.areas:
                 distance = math.sqrt(
-                    (apartment.coord[0] - area.coord[0]) ** 2 +
-                    (apartment.coord[1] - area.coord[1]) ** 2
+                    (apartment.coord[0] - area.coord[0])
+                      ** 2 + (apartment.coord[1] - area.coord[1]) ** 2
                 )
                 if distance < min_distance:
                     min_distance = distance
@@ -236,6 +236,16 @@ class Graph:
 
             if closest_area:
                 self.add_edge(apartment, closest_area)
-                G.add_edge(apartment.address, closest_area.name, relation="located_in", distance=min_distance)
+                graph.add_edge(apartment.address, closest_area.name, relation="located_in", distance=min_distance)
 
-        return G
+        return graph
+
+
+if __name__ == '__main__':
+    import python_ta
+
+    python_ta.check_all(config={
+        'extra-imports': ['typing', 'networkx', 'data_loader', 'math'],
+        'allowed-io': ['build_graph'],
+        'max-line-length': 120,
+    })
