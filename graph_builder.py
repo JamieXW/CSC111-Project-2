@@ -3,8 +3,8 @@
 This module constructs a graph of apartments and areas using NetworkX.
 """
 from typing import Optional
-import networkx as nx
 import math
+import networkx as nx
 from data_loader import load_neighbourhood_data, load_apartment_data
 
 
@@ -34,7 +34,7 @@ class Area:
     coord: tuple[float, float]
     apartments: list['Apartment']
 
-    def __init__(self, name: str, assault_rate: float, 
+    def __init__(self, name: str, assault_rate: float,
                  homicide_rate: float, robbery_rate: float, coord: tuple[float, float]) -> None:
         """Initialize a new area with the given attributes."""
         self.name = name
@@ -127,7 +127,8 @@ class Graph:
         beds_pref = input("Number of beds (specific number or 'any'): ").strip().lower()
         baths_pref = input("Number of baths (specific number or 'any'): ").strip().lower()
         price_per_bed_pref = input(
-            "Price per bed (specific number or 'any'. Enter in the form '$'price'.0): ").strip().lower()
+            "Price per bed (specific number or 'any' (WITHOUT QUOTATION). Enter in the form '$'price'.0 "
+            "(INCLUDE .0 ALWAYS)): ").strip().lower()
 
         if beds_pref.isdigit():
             beds_pref = int(beds_pref)
@@ -151,6 +152,18 @@ class Graph:
         neighbourhoods = load_neighbourhood_data(neighbourhood_file)
         apartments = load_apartment_data(apartment_file)
 
+        assault_norm = (neighbourhoods['ASSAULT_RATE_2024'] - neighbourhoods['ASSAULT_RATE_2024'].min()) / \
+                       (neighbourhoods['ASSAULT_RATE_2024'].max() - neighbourhoods['ASSAULT_RATE_2024'].min())
+
+        robbery_norm = (neighbourhoods['ROBBERY_RATE_2024'] - neighbourhoods['ROBBERY_RATE_2024'].min()) / \
+                       (neighbourhoods['ROBBERY_RATE_2024'].max() - neighbourhoods['ROBBERY_RATE_2024'].min())
+
+        homicide_norm = (neighbourhoods['HOMICIDE_RATE_2024'] - neighbourhoods['HOMICIDE_RATE_2024'].min()) / \
+                        (neighbourhoods['HOMICIDE_RATE_2024'].max() - neighbourhoods['HOMICIDE_RATE_2024'].min())
+
+        neighbourhoods['crime_score'] = (0.5 * assault_norm + 0.3 * robbery_norm + 0.2 * homicide_norm
+                                         )
+
         graph = nx.Graph()
 
         for _, row in neighbourhoods.iterrows():
@@ -168,15 +181,13 @@ class Graph:
 
             self.add_area(area)
 
-            if area.assault_rate < 642.34 and area.robbery_rate < 90.33 and area.homicide_rate == 0.0:
-                crime_level = 'low'
+            crime_score = row['crime_score']
+
+            if crime_score < 0.3:
                 color = 'green'
-            elif (642.34 <= area.assault_rate <= 1000 or 90.33
-                   <= area.robbery_rate <= 150 or 0.1 <= area.homicide_rate <= 5.0):
-                crime_level = 'medium'
+            elif crime_score < 0.6:
                 color = 'yellow'
             else:
-                crime_level = 'high'
                 color = 'red'
 
             graph.add_node(
@@ -186,7 +197,6 @@ class Graph:
                 robbery_rate=area.robbery_rate,
                 homicide_rate=area.homicide_rate,
                 coord=area.coord,
-                crime_level=crime_level,
                 color=color
             )
 
@@ -222,13 +232,12 @@ class Graph:
 
             closest_area = self.areas[0]
             min_distance = math.sqrt(
-                (apartment.coord[0] - closest_area.coord[0]) ** 2 +
-                (apartment.coord[1] - closest_area.coord[1]) ** 2
+                (apartment.coord[0] - closest_area.coord[0]) ** 2 + (apartment.coord[1] - closest_area.coord[1]) ** 2
             )
             for area in self.areas:
                 distance = math.sqrt(
                     (apartment.coord[0] - area.coord[0])
-                      ** 2 + (apartment.coord[1] - area.coord[1]) ** 2
+                    ** 2 + (apartment.coord[1] - area.coord[1]) ** 2
                 )
                 if distance < min_distance:
                     min_distance = distance
