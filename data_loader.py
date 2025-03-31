@@ -51,11 +51,11 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
     df['Bedroom'] = pd.to_numeric(df['Bedroom'], errors='coerce')
     df['Bathroom'] = pd.to_numeric(df['Bathroom'], errors='coerce')
 
-    df['Price'] = df['Price'].astype(str)  
+    df['Price'] = df['Price'].astype(str)
     df['Price'] = (
         df['Price']
-        .str.replace('$', '', regex=False)  
-        .str.replace(',', '', regex=False) 
+        .str.replace('$', '', regex=False)
+        .str.replace(',', '', regex=False)
     )
 
     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
@@ -68,8 +68,8 @@ def load_apartment_data(csv_file: str) -> pd.DataFrame:
 if __name__ == '__main__':
     import python_ta
 
-    python_ta.check_all(config={ 
+    python_ta.check_all(config={
         'extra-imports': ['pandas', 'googlemaps'],
         'allowed-io': [],
         'max-line-length': 120,
-})
+    })
